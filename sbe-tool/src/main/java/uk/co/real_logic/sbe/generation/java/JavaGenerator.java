@@ -345,7 +345,8 @@ public class JavaGenerator implements CodeGenerator
             {
                 generateAnnotations(indent + INDENT, groupClassName, groups, sb, this::encoderName);
             }
-            generateGroupEncoderClassHeader(sb, groupName, outerClassName, tokens, groups, index, indent + INDENT);
+            generateGroupEncoderClassHeader(sb, groupName, outerClassName, tokens, groups, varData, index,
+                indent + INDENT);
 
             generateEncoderFields(sb, groupClassName, fields, indent + INDENT);
             generateEncoderGroups(sb, outerClassName, groups, indent + INDENT, true);
@@ -459,6 +460,7 @@ public class JavaGenerator implements CodeGenerator
         final String parentMessageClassName,
         final List<Token> tokens,
         final List<Token> subGroupTokens,
+        final List<Token> varDataTokens,
         final int index,
         final String ind)
     {
@@ -540,6 +542,31 @@ public class JavaGenerator implements CodeGenerator
             .append(ind).append("        ").append(resetCountPut).append(";\n\n")
             .append(ind).append("        return count;\n")
             .append(ind).append("    }\n");
+
+        if (subGroupTokens.isEmpty() && varDataTokens.isEmpty())
+        {
+            sb.append("\n")
+                .append(ind).append("    public int setIndex(int i)\n")
+                .append(ind).append("    {\n")
+                .append(ind).append("        if (index >= count || index < 0)\n")
+                .append(ind).append("        {\n")
+                .append(ind).append("            throw new java.lang.IndexOutOfBoundsException();\n")
+                .append(ind).append("        }\n\n")
+                .append(ind).append("        index = i;\n")
+                .append(ind).append("        offset = initialLimit + HEADER_SIZE + i * sbeBlockLength();\n\n")
+                .append(ind).append("        return count;\n")
+                .append(ind).append("    }\n");
+
+            final String updatedLimit = "initialLimit + HEADER_SIZE + count * sbeBlockLength()";
+            sb.append("\n")
+                .append(ind).append("    public int updateCountAndLimit(int newCount)\n")
+                .append(ind).append("    {\n")
+                .append(ind).append("        count = newCount;\n")
+                .append(ind).append("        ").append(resetCountPut).append(";\n")
+                .append(ind).append("        parentMessage.limit(").append(updatedLimit).append(");\n\n")
+                .append(ind).append("        return count;\n")
+                .append(ind).append("    }\n");
+        }
 
         sb.append("\n")
             .append(ind).append("    public static int sbeHeaderSize()\n")
