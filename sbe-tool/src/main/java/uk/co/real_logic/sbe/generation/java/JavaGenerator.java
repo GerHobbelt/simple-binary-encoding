@@ -543,18 +543,30 @@ public class JavaGenerator implements CodeGenerator
             .append(ind).append("        return count;\n")
             .append(ind).append("    }\n");
 
+        sb.append("\n")
+            .append(ind).append("    public int offset()\n")
+            .append(ind).append("    {\n")
+            .append(ind).append("        return offset;\n")
+            .append(ind).append("    }\n");
+
         if (subGroupTokens.isEmpty() && varDataTokens.isEmpty())
         {
             sb.append("\n")
-                .append(ind).append("    public int setIndex(int i)\n")
+                .append(ind).append("    public int index(int i)\n")
                 .append(ind).append("    {\n")
                 .append(ind).append("        if (index >= count || index < 0)\n")
                 .append(ind).append("        {\n")
                 .append(ind).append("            throw new java.lang.IndexOutOfBoundsException();\n")
                 .append(ind).append("        }\n\n")
                 .append(ind).append("        index = i;\n")
-                .append(ind).append("        offset = initialLimit + HEADER_SIZE + i * sbeBlockLength();\n\n")
-                .append(ind).append("        return count;\n")
+                .append(ind).append("        offset = initialLimit + HEADER_SIZE + i * sbeBlockLength();\n")
+                .append(ind).append("        return offset;\n")
+                .append(ind).append("    }\n");
+
+            sb.append("\n")
+                .append(ind).append("    public int index()\n")
+                .append(ind).append("    {\n")
+                .append(ind).append("        return index;\n")
                 .append(ind).append("    }\n");
 
             final String updatedLimit = "initialLimit + HEADER_SIZE + count * sbeBlockLength()";
