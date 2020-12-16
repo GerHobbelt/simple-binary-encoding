@@ -554,7 +554,7 @@ public class JavaGenerator implements CodeGenerator
             sb.append("\n")
                 .append(ind).append("    public int index(int i)\n")
                 .append(ind).append("    {\n")
-                .append(ind).append("        if (index >= count || index < 0)\n")
+                .append(ind).append("        if (i >= count || i < 0)\n")
                 .append(ind).append("        {\n")
                 .append(ind).append("            throw new java.lang.IndexOutOfBoundsException();\n")
                 .append(ind).append("        }\n\n")
