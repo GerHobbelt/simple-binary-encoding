@@ -294,7 +294,8 @@ public class JavaGenerator implements CodeGenerator
             {
                 generateAnnotations(indent + INDENT, groupName, groups, sb, this::decoderName);
             }
-            generateGroupDecoderClassHeader(sb, groupName, outerClassName, tokens, groups, index, indent + INDENT);
+            generateGroupDecoderClassHeader(sb, groupName, outerClassName, tokens, groups, varData, index,
+                indent + INDENT);
 
             generateDecoderFields(sb, fields, indent + INDENT);
             generateDecoderGroups(sb, outerClassName, groups, indent + INDENT, true);
@@ -362,6 +363,7 @@ public class JavaGenerator implements CodeGenerator
         final String parentMessageClassName,
         final List<Token> tokens,
         final List<Token> subGroupTokens,
+        final List<Token> varDataTokens,
         final int index,
         final String indent)
     {
@@ -380,6 +382,7 @@ public class JavaGenerator implements CodeGenerator
         final String numInGroupOffset = "limit + " + numInGroupToken.offset();
         final String numInGroupGet = generateGet(
             numInGroupType, numInGroupOffset, byteOrderString(numInGroupToken.encoding()));
+        final boolean fixedSize = subGroupTokens.isEmpty() && varDataTokens.isEmpty();
 
         generateGroupDecoderClassDeclaration(
             sb,
@@ -387,6 +390,7 @@ public class JavaGenerator implements CodeGenerator
             parentMessageClassName,
             findSubGroupNames(subGroupTokens),
             indent,
+            fixedSize,
             dimensionHeaderLen);
 
         final String blockLenCast = PrimitiveType.UINT32 == blockLengthType ? "(int)" : "";
@@ -401,6 +405,7 @@ public class JavaGenerator implements CodeGenerator
             .append(indent).append("        }\n\n")
             .append(indent).append("        index = 0;\n")
             .append(indent).append("        final int limit = parentMessage.limit();\n")
+            .append(fixedSize ? indent + "        initialLimit = limit;\n" : "")
             .append(indent).append("        parentMessage.limit(limit + HEADER_SIZE);\n")
             .append(indent).append("        blockLength = ").append(blockLenCast).append(blockLengthGet).append(";\n")
             .append(indent).append("        count = ").append(numInGroupCast).append(numInGroupGet).append(";\n")
@@ -452,6 +457,34 @@ public class JavaGenerator implements CodeGenerator
             .append(indent).append("    {\n")
             .append(indent).append("        return index < count;\n")
             .append(indent).append("    }\n");
+
+        sb.append("\n")
+            .append(indent).append("    public int offset()\n")
+            .append(indent).append("    {\n")
+            .append(indent).append("        return offset;\n")
+            .append(indent).append("    }\n");
+
+        if (fixedSize)
+        {
+            sb.append("\n")
+                .append(indent).append("    public int index(int i)\n")
+                .append(indent).append("    {\n")
+                .append(indent).append("        if (i >= count || i < 0)\n")
+                .append(indent).append("        {\n")
+                .append(indent).append("            throw new java.lang.IndexOutOfBoundsException();\n")
+                .append(indent).append("        }\n\n")
+                .append(indent).append("        index = i;\n")
+                .append(indent).append("        offset = initialLimit + HEADER_SIZE + i * sbeBlockLength();\n")
+                .append(indent).append("        return offset;\n")
+                .append(indent).append("    }\n");
+
+            sb.append("\n")
+                .append(indent).append("    public int index()\n")
+                .append(indent).append("    {\n")
+                .append(indent).append("        return index;\n")
+                .append(indent).append("    }\n");
+        }
+
     }
 
     private void generateGroupEncoderClassHeader(
@@ -604,6 +637,7 @@ public class JavaGenerator implements CodeGenerator
         final String parentMessageClassName,
         final List<String> subGroupNames,
         final String indent,
+        final boolean fixedSize,
         final int dimensionHeaderSize)
     {
         final String className = formatClassName(groupName);
@@ -618,6 +652,7 @@ public class JavaGenerator implements CodeGenerator
             indent + "    private int count;\n" +
             indent + "    private int index;\n" +
             indent + "    private int offset;\n" +
+            (fixedSize ? indent + "    private int initialLimit;\n" : "") +
             indent + "    private int blockLength;\n",
             className,
             dimensionHeaderSize,
